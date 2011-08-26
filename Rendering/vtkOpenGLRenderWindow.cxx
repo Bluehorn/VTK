@@ -1581,7 +1581,9 @@ int vtkOpenGLRenderWindow::CreateHardwareOffScreenWindow(int width, int height)
   const GLubyte *openglRenderer=glGetString(GL_RENDERER);
   const char *substring=strstr(reinterpret_cast<const char *>(openglRenderer),
                                "Mesa");
-  int isMesa=substring!=0;
+  // Mesa detection disabled for now since this check incorrectly assumes a software
+  // renderer for Intel HD graphic cards.  -- Torsten
+  int isMesa=0;   // substring!=0;
   int supports_texture_non_power_of_two=
     extensions->ExtensionSupported("GL_VERSION_2_0") ||
     extensions->ExtensionSupported("GL_ARB_texture_non_power_of_two");
