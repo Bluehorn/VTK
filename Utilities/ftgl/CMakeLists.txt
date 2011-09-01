@@ -1,5 +1,7 @@
 PROJECT (VTKFTGL)
 
+INCLUDE(TestCXXAcceptsFlag)
+
 #
 # Dependency mask
 #
@@ -158,6 +160,39 @@ IF(NOT VTK_INSTALL_NO_LIBRARIES)
     LIBRARY DESTINATION ${VTK_INSTALL_LIB_DIR_CM24} COMPONENT RuntimeLibraries
     ARCHIVE DESTINATION ${VTK_INSTALL_LIB_DIR_CM24} COMPONENT Development)
 ENDIF(NOT VTK_INSTALL_NO_LIBRARIES)
+
+#
+# To avoid name clashes (and the resulting crashes) between our FTGL and the
+# system FTGL, we configure the linker to add a prefix to all symbols.
+#
+
+if (CMAKE_COMPILER_IS_GNUCXX)
+
+  GET_TARGET_PROPERTY(VTKFTGL_LINK_FLAGS vtkftgl LINK_FLAGS)
+  IF(VTKFTGL_LINK_FLAGS)
+    SET(VTKFTGL_LINK_FLAGS "${VTKFTGL_LINK_FLAGS} ")
+  ELSE(VTKFTGL_LINK_FLAGS)
+    SET(VTKFTGL_LINK_FLAGS)
+  ENDIF(VTKFTGL_LINK_FLAGS)
+
+
+  set(_version_script_content "libvtkftgl { *; };")
+  set(_version_script "${CMAKE_CURRENT_BINARY_DIR}/version.script")
+  file(WRITE ${_version_script} "${_version_script_content}\n")
+
+  # Check if the linker supports version script (i.e. is GNU ld)
+  check_cxx_accepts_flag("-Wl,--version-script,${_version_script}"
+    LD_ACCEPTS_VERSION_SCRIPT)
+  if (LD_ACCEPTS_VERSION_SCRIPT)
+    set(_link_flags "-Wl,--version-script,'${_version_script}'")
+  endif (LD_ACCEPTS_VERSION_SCRIPT)
+
+  if (_link_flags)
+    SET_TARGET_PROPERTIES(vtkftgl PROPERTIES
+      LINK_FLAGS "${VTKFTGL_LINK_FLAGS}${_link_flags}")
+  endif (_link_flags)
+endif (CMAKE_COMPILER_IS_GNUCXX)
+
 
 #
 # Do not cover this lib
